@@ -118,11 +118,11 @@ def parse_mortality_dat(dat_path: Path, output_path: Path, cycle: str) -> Path:
         (0, 14),    # SEQN
         (14, 15),   # eligstat (1=eligible, 2=under 18, 3=ineligible)
         (15, 16),   # mortstat (0=assumed alive, 1=deceased)
-        (16, 19),   # ucod_leading (ICD-10 leading cause, 001-999)
-        (19, 20),   # diabetes (1=yes, blank=no)
-        (20, 21),   # hyperten (1=yes, blank=no)
-        (21, 26),   # permth_int (person-months since interview)
-        (26, 31),   # permth_exm (person-months since examination)
+        (16, 19),   # ucod_leading (condensed cause code 1-10)
+        (19, 20),   # diabetes (1=yes, 0=no)
+        (20, 21),   # hyperten (1=yes, 0=no)
+        (42, 45),   # permth_int (person-months since interview)
+        (45, 48),   # permth_exm (person-months since examination)
     ]
 
     names = [
