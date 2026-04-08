@@ -1,0 +1,68 @@
+datasets:
+  nhanes:
+    description: "National Health and Nutrition Examination Survey (CDC)"
+    url: "https://wwwn.cdc.gov/Nchs/Nhanes"
+    cycles: "1999-2020"
+    raw_path: data/raw/nhanes
+    processed_path: data/processed/nhanes_features.parquet
+    license: "Public Domain (US Government)"
+    key_variables:
+      - demographics
+      - blood_labs
+      - lipids
+      - blood_pressure
+      - body_measures
+      - smoking
+      - alcohol
+      - physical_activity
+      - diet
+      - mortality_linkage
+
+  geo_methylation:
+    description: "GEO DNA methylation datasets for epigenetic clocks"
+    url: "https://www.ncbi.nlm.nih.gov/geo/"
+    series:
+      - id: "GSE40279"
+        description: "Hannum clock - 656 whole blood samples"
+        n_samples: 656
+        n_cpg_sites: 473034
+      - id: "GSE55763"
+        description: "Large blood methylation reference"
+        n_samples: 2711
+    raw_path: data/raw/geo_methylation
+    processed_path: data/processed/methylation_features.parquet
+    license: "GEO Open Access"
+
+  physionet:
+    description: "PhysioNet wearable and physiological signal datasets"
+    url: "https://physionet.org"
+    datasets:
+      - name: "MESA Sleep Study"
+        description: "Polysomnography + actigraphy + cardiovascular"
+        n_participants: 2056
+      - name: "MIMIC-IV Waveform"
+        description: "ICU continuous monitoring"
+    raw_path: data/raw/physionet
+    license: "PhysioNet Credentialed (free registration)"
+
+  food_images:
+    description: "Food recognition training datasets"
+    url: "https://data.vision.ee.ethz.ch/cvl/datasets_extra/food-101"
+    datasets:
+      - name: "Food-101"
+        n_images: 101000
+        n_classes: 101
+      - name: "VIREO Food-172"
+        n_images: 110241
+        n_classes: 172
+        note: "Includes Asian cuisine (Korean, Chinese, Japanese)"
+    raw_path: data/raw/food_images
+    processed_path: data/processed/food
+    license: "Research use"
+
+  usda_food:
+    description: "USDA FoodData Central nutritional database"
+    url: "https://fdc.nal.usda.gov/download-datasets.html"
+    n_foods: 600000
+    raw_path: data/external/usda_food
+    license: "Public Domain"

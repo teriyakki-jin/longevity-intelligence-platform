@@ -1,0 +1,30 @@
+server:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  reload: false
+
+cors:
+  allow_origins: ["http://localhost:3000"]
+  allow_methods: ["GET", "POST"]
+  allow_headers: ["*"]
+
+rate_limit:
+  requests_per_minute: 30
+  burst: 10
+
+auth:
+  enabled: true
+  api_key_header: "X-API-Key"
+
+models:
+  preload_on_startup: true
+  cache_predictions: true
+  cache_ttl_seconds: 300
+
+coach:
+  model: claude-opus-4-6
+  max_tokens: 2048
+  temperature: 0.7
+  conversation_window: 20
+  system_prompt_path: src/longevity/coach/prompts/system.txt

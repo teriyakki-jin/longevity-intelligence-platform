@@ -1,0 +1,43 @@
+model:
+  type: ensemble
+  components: [cox, xgboost_survival, deepsurv]
+  cv_folds: 5
+  time_horizons_years: [1, 3, 5, 10]
+
+causes:
+  - cardiovascular
+  - cancer
+  - respiratory
+  - diabetes
+  - accidents
+
+cox:
+  penalizer: 0.1
+  l1_ratio: 0.5
+
+xgboost_survival:
+  n_estimators: 500
+  max_depth: 6
+  learning_rate: 0.05
+  subsample: 0.8
+
+deepsurv:
+  hidden_dims: [256, 128, 64]
+  dropout: 0.2
+  learning_rate: 1.0e-3
+  batch_size: 512
+  epochs: 100
+
+evaluation:
+  primary_metric: cindex
+  secondary_metrics: [brier_score, time_auc]
+  cindex_threshold: 0.78
+  calibration_tolerance_pct: 2.0
+
+fairness:
+  groups: [sex, race_ethnicity, age_group]
+  max_performance_gap_pct: 10.0
+
+output:
+  model_path: models/mortality
+  mlflow_experiment: mortality-predictor
