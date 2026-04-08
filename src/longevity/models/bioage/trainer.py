@@ -58,8 +58,27 @@ def _compute_cv_mae(
     return float(np.mean(maes))
 
 
+def _encode_categoricals(X: pd.DataFrame) -> pd.DataFrame:
+    """Encode object columns to numeric so LightGBM accepts the DataFrame.
+
+    LightGBM requires int / float / bool dtypes only.
+    Converts 'sex' → 'sex_encoded' (0/1) and drops the original column.
+    """
+    from sklearn.preprocessing import LabelEncoder
+
+    X = X.copy()
+    if "sex" in X.columns and X["sex"].dtype == object:
+        le = LabelEncoder()
+        X["sex_encoded"] = le.fit_transform(X["sex"].fillna("male"))
+        X = X.drop(columns=["sex"])
+    return X
+
+
 def build_optuna_objective(X: pd.DataFrame, y: pd.Series, n_folds: int):
     """Build Optuna objective function for HPO."""
+    # Encode categoricals once up-front — avoids dtype error on every trial
+    X_enc = _encode_categoricals(X)
+
     def objective(trial: optuna.Trial) -> float:
         params = {
             "objective": "regression",
@@ -76,7 +95,7 @@ def build_optuna_objective(X: pd.DataFrame, y: pd.Series, n_folds: int):
             "min_child_samples": trial.suggest_int("min_child_samples", 10, 100),
             "num_leaves": trial.suggest_int("num_leaves", 20, 300),
         }
-        return _compute_cv_mae(X, y, params, n_folds)
+        return _compute_cv_mae(X_enc, y, params, n_folds)
 
     return objective
 
