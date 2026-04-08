@@ -18,7 +18,7 @@ from longevity.common.logging import get_logger
 
 logger = get_logger(__name__)
 
-BASE_URL = "https://wwwn.cdc.gov/Nchs/Nhanes"
+BASE_URL = "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public"
 
 # (cycle, component_code, filename)
 class NHANESFile(NamedTuple):
@@ -240,36 +240,30 @@ MORTALITY_FILES = {
     "2017-2018": "NHANES_2017_2018_MORT_2019_PUBLIC.dat",
 }
 
-# Cycle-to-URL-directory mapping
+# Cycle-to-start-year mapping (new CDC URL: /Nchs/Data/Nhanes/Public/{year}/DataFiles/{file})
 CYCLE_URL_MAP = {
-    "1999-2000": "1999-2000",
-    "2001-2002": "2001-2002",
-    "2003-2004": "2003-2004",
-    "2005-2006": "2005-2006",
-    "2007-2008": "2007-2008",
-    "2009-2010": "2009-2010",
-    "2011-2012": "2011-2012",
-    "2013-2014": "2013-2014",
-    "2015-2016": "2015-2016",
-    "2017-2018": "2017-2018",
-    "2017-2020": "2017-2020",
+    "1999-2000": "1999",
+    "2001-2002": "2001",
+    "2003-2004": "2003",
+    "2005-2006": "2005",
+    "2007-2008": "2007",
+    "2009-2010": "2009",
+    "2011-2012": "2011",
+    "2013-2014": "2013",
+    "2015-2016": "2015",
+    "2017-2018": "2017",
+    "2017-2020": "2017",  # prepandemic files also under 2017
 }
 
 
 def _build_nhanes_url(cycle: str, filename: str, component_type: str) -> str:
-    """Build CDC NHANES file URL."""
-    cycle_dir = CYCLE_URL_MAP[cycle]
-    if component_type in ("demographics",):
-        folder = "Demographics"
-    elif component_type in ("sleep",):
-        folder = "Questionnaire"
-    elif component_type in ("smoking", "alcohol", "physical_activity"):
-        folder = "Questionnaire"
-    elif component_type in ("body_measures", "blood_pressure"):
-        folder = "Examination"
-    else:
-        folder = "Laboratory"
-    return f"{BASE_URL}/{cycle_dir}/{folder}/{filename}"
+    """Build CDC NHANES file URL.
+
+    New CDC URL format (2024+):
+    https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/{start_year}/DataFiles/{filename}
+    """
+    start_year = CYCLE_URL_MAP[cycle]
+    return f"{BASE_URL}/{start_year}/DataFiles/{filename}"
 
 
 def _compute_md5(path: Path) -> str:

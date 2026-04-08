@@ -325,13 +325,30 @@ def harmonize_cycle(
     # Start with demographics as base
     merged = component_dfs["demographics"].copy()
 
-    # Merge all other components
+    # Merge all other components, coalescing overlapping columns
     for comp, df in component_dfs.items():
         if comp == "demographics":
             continue
-        # Drop duplicate target columns that may appear in multiple component files
-        new_cols = [c for c in df.columns if c not in merged.columns or c == "SEQN"]
-        merged = merged.merge(df[new_cols], on="SEQN", how="left")
+
+        non_seqn = [c for c in df.columns if c != "SEQN"]
+        overlap_cols = [c for c in non_seqn if c in merged.columns]
+        new_cols = [c for c in non_seqn if c not in merged.columns]
+
+        # Merge new columns first
+        if new_cols:
+            merged = merged.merge(df[["SEQN"] + new_cols], on="SEQN", how="left")
+
+        # Coalesce overlapping columns (fill nulls from this component)
+        if overlap_cols:
+            temp = merged.merge(
+                df[["SEQN"] + overlap_cols], on="SEQN", how="left", suffixes=("", "_new")
+            )
+            for col in overlap_cols:
+                new_col = f"{col}_new"
+                if new_col in temp.columns:
+                    temp[col] = temp[col].combine_first(temp[new_col])
+                    temp = temp.drop(columns=[new_col])
+            merged = temp
 
     # Encode categorical variables
     merged = _encode_sex(merged)

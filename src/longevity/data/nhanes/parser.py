@@ -146,8 +146,8 @@ def parse_mortality_dat(dat_path: Path, output_path: Path, cycle: str) -> Path:
     except Exception as e:
         raise DataPipelineError(f"Failed to parse mortality file {dat_path}: {e}") from e
 
-    df["SEQN"] = df["SEQN"].astype("int64")
-    df["mortstat"] = df["mortstat"].astype("Int8")
+    df["SEQN"] = pd.to_numeric(df["SEQN"], errors="coerce").astype("Int64")
+    df["mortstat"] = pd.to_numeric(df["mortstat"], errors="coerce").astype("Int8")
     df["_cycle"] = cycle
 
     # Map ICD-10 leading cause to cause categories
@@ -164,30 +164,36 @@ def parse_mortality_dat(dat_path: Path, output_path: Path, cycle: str) -> Path:
 
 
 def _map_icd_to_cause(ucod: float | None) -> str | None:
-    """Map ICD-10 numeric code (001-999) to broad cause category.
+    """Map NHANES mortality linkage UCOD_LEADING code (1-10) to cause category.
 
-    NHANES mortality linkage uses a condensed ICD code:
-    1-43: Diseases of heart (cardiovascular)
-    46: Cerebrovascular diseases (stroke)
-    47-49: Respiratory diseases
-    50-51: Influenza/pneumonia
-    52: Diabetes
-    57-62: Malignant neoplasms (cancer)
+    CDC NHANES condensed cause codes:
+    1  = Diseases of heart (cardiovascular)
+    2  = Malignant neoplasms (cancer)
+    3  = Chronic lower respiratory diseases
+    4  = Accidents / unintentional injuries
+    5  = Cerebrovascular diseases (stroke → cardiovascular)
+    6  = Alzheimer's disease
+    7  = Diabetes mellitus
+    8  = Influenza and pneumonia
+    9  = Nephritis / nephrotic syndrome
+    10 = All other causes
     """
     if ucod is None or pd.isna(ucod):
         return None
     code = int(ucod)
-    if code in range(1, 44) or code == 46:
-        return "cardiovascular"
-    if code in range(47, 53):
-        return "respiratory"
-    if code == 52:
-        return "diabetes"
-    if code in range(57, 63):
-        return "cancer"
-    if code == 1:
-        return "accidents"
-    return "other"
+    mapping = {
+        1: "cardiovascular",
+        2: "cancer",
+        3: "respiratory",
+        4: "accidents",
+        5: "cardiovascular",   # stroke
+        6: "other",            # alzheimer's
+        7: "diabetes",
+        8: "respiratory",      # pneumonia/influenza
+        9: "other",            # nephritis
+        10: "other",
+    }
+    return mapping.get(code, "other")
 
 
 def batch_parse_cycle(
