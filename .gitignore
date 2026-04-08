@@ -21,8 +21,8 @@ data/interim/
 data/processed/
 data/external/
 
-# Models (large binary files)
-models/
+# Models (large binary files — top-level /models/ dir only, NOT src/longevity/models/)
+/models/
 *.joblib
 *.pkl
 *.pt
