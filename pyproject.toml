@@ -1,12 +1,12 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "longevity-intelligence-platform"
 version = "0.1.0"
 description = "Personal health AI: biological age, mortality risk, and digital twin simulator"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     # Data
     "pandas>=2.2",
