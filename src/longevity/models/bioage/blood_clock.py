@@ -105,12 +105,20 @@ class BloodAgeClock(BaseModel):
                     X["sex"].fillna("male")
                 )
             else:
-                sex_filled = X["sex"].fillna("male")
-                known_classes = set(self._sex_encoder.classes_)
-                sex_filled = sex_filled.apply(
-                    lambda s: s if s in known_classes else "male"
-                )
-                X["sex_encoded"] = self._sex_encoder.transform(sex_filled)
+                _enc = getattr(self, "_sex_encoder", None)
+                encoder_fitted = _enc is not None and hasattr(_enc, "classes_")
+                if encoder_fitted:
+                    sex_filled = X["sex"].fillna("male")
+                    known_classes = set(_enc.classes_)
+                    sex_filled = sex_filled.apply(
+                        lambda s: s if s in known_classes else "male"
+                    )
+                    X["sex_encoded"] = _enc.transform(sex_filled)
+                else:
+                    # Fallback: model was trained with pre-encoded sex
+                    X["sex_encoded"] = X["sex"].fillna("male").map(
+                        {"male": 0, "female": 1, "Male": 0, "Female": 1}
+                    ).fillna(0).astype(int)
         else:
             X["sex_encoded"] = 0
 
@@ -219,10 +227,12 @@ class BloodAgeClock(BaseModel):
         acceleration = predicted_age - true_age
 
         # Compute percentile relative to same-age peers
-        # (based on training distribution)
+        age_percentiles = getattr(self, "_age_percentiles", None)
+        if age_percentiles is None or len(age_percentiles) == 0:
+            age_percentiles = np.arange(0, 101, dtype=float)
         percentile = np.interp(
             predicted_age,
-            self._age_percentiles,
+            age_percentiles,
             np.arange(0, 101),
         )
 
@@ -248,6 +258,54 @@ class BloodAgeClock(BaseModel):
             "confidence_interval_lower": ci_lower.tolist(),
             "confidence_interval_upper": ci_upper.tolist(),
         }
+
+    def save(self, path) -> "Path":
+        """Override to persist blood-clock-specific attributes."""
+        self._check_fitted()
+        from pathlib import Path as _Path
+        dest = _Path(path)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        import joblib as _jl
+        _jl.dump(
+            {
+                "model": self._model,
+                "feature_names": self._feature_names,
+                "name": self.name,
+                "age_mean": self._age_mean,
+                "age_std": self._age_std,
+                "age_percentiles": self._age_percentiles,
+                "sex_encoder": getattr(self, "_sex_encoder", None),
+            },
+            dest,
+            compress=3,
+        )
+        logger.info("model_saved", name=self.name, path=str(dest))
+        return dest
+
+    @classmethod
+    def load(cls, path) -> "BloodAgeClock":
+        """Override to restore blood-clock-specific attributes."""
+        from pathlib import Path as _Path
+        import joblib as _jl
+        dest = _Path(path)
+        if not dest.exists():
+            from longevity.common.exceptions import ModelNotFoundError
+            raise ModelNotFoundError(f"Model file not found: {dest}")
+        payload = _jl.load(dest)
+        instance = cls.__new__(cls)
+        instance._model = payload["model"]
+        instance._feature_names = payload["feature_names"]
+        instance.name = payload["name"]
+        instance._is_fitted = True
+        # Restore optional attributes with safe defaults
+        instance._age_mean = payload.get("age_mean", 0.0)
+        instance._age_std = payload.get("age_std", 1.0)
+        instance._age_percentiles = payload.get(
+            "age_percentiles", np.arange(0, 101, dtype=float)
+        )
+        instance._sex_encoder = payload.get("sex_encoder", None)
+        logger.info("model_loaded", name=instance.name, path=str(dest))
+        return instance
 
     def get_feature_importance(self) -> pd.DataFrame:
         """Return feature importances as a sorted DataFrame."""

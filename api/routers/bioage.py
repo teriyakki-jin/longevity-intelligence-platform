@@ -71,7 +71,7 @@ async def predict_bioage(req: BioAgeRequest) -> BioAgeResponse:
 
     try:
         df = _request_to_dataframe(req)
-        result = model.predict_biological_age(df, true_age=req.demographics.chronological_age)
+        result = model.predict_biological_age(df, true_age=[req.demographics.chronological_age])
 
         biological_age = float(result["biological_age"])
         chronological_age = float(result["chronological_age"])
@@ -111,5 +111,7 @@ async def predict_bioage(req: BioAgeRequest) -> BioAgeResponse:
     except InsufficientDataError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         logger.error("bioage_prediction_error", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Prediction failed")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Prediction failed: {e}")

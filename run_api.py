@@ -15,10 +15,16 @@ os.chdir(project_root)
 import uvicorn
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--no-reload", action="store_true")
+    args, _ = parser.parse_known_args()
+
     uvicorn.run(
         "api.main:app",
         host="0.0.0.0",
-        port=8000,
-        reload=True,
+        port=args.port,
+        reload=not args.no_reload,
         reload_dirs=[project_root],
     )
