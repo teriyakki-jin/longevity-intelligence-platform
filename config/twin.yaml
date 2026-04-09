@@ -6,19 +6,19 @@ simulator:
 causal_graph:
   # Effect sizes from meta-analyses (units: per-SD change in outcome)
   edges:
-    - source: exercise_met_min_week
+    - source: exercise_minutes_per_week
       target: hdl_mg_dl
       effect_size: 0.12
       effect_direction: positive
       evidence: "meta-analysis, RCT validated"
 
-    - source: exercise_met_min_week
+    - source: exercise_minutes_per_week
       target: bmi
       effect_size: -0.08
       effect_direction: negative
       evidence: "meta-analysis"
 
-    - source: exercise_met_min_week
+    - source: exercise_minutes_per_week
       target: glucose_mg_dl
       effect_size: -0.10
       effect_direction: negative

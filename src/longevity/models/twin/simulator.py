@@ -94,15 +94,37 @@ class HealthTwinSimulator:
             counterfactual[intervention.variable] = intervention.target_value
 
         # Propagate through causal graph (one level of mediation)
+        # Typical ranges for normalization (intervention variable -> typical SD)
+        _typical_sd: dict[str, float] = {
+            "exercise_minutes_per_week": 120.0,
+            "sleep_hours": 1.5,
+            "drinks_per_week": 7.0,
+            "bmi": 5.0,
+            "smoking_status": 1.0,
+        }
+        # Downstream target typical SD for absolute change scaling
+        _target_sd: dict[str, float] = {
+            "hdl_mg_dl": 12.0,
+            "glucose_mg_dl": 18.0,
+            "triglycerides_mg_dl": 50.0,
+            "bmi": 5.0,
+            "crp_mg_l": 3.0,
+            "alt_u_l": 20.0,
+            "total_cholesterol_mg_dl": 35.0,
+        }
+
         downstream_effects = effect_map.get(intervention.variable, [])
+        iv_sd = _typical_sd.get(intervention.variable, max(abs(delta), 1.0))
+        delta_normalized = delta / iv_sd  # in SD units
+
         for effect in downstream_effects:
             target_col = effect["target"]
             if target_col not in counterfactual.columns:
                 continue
 
-            # Effect size in SD units; normalize delta by typical range
-            # Approximate SD from intervention magnitude
-            effect_magnitude = delta * effect["effect_size"] * noise_scale
+            target_sd = _target_sd.get(target_col, 10.0)
+            # Effect size (beta) in SD units: how many SDs target changes per SD of intervention
+            effect_magnitude = delta_normalized * effect["effect_size"] * target_sd * noise_scale
             direction_sign = 1.0 if effect["effect_direction"] == "positive" else -1.0
 
             current_val = counterfactual[target_col].values[0]
@@ -163,7 +185,7 @@ class HealthTwinSimulator:
             try:
                 cf_result = self._bioage_model.predict_biological_age(
                     cf_features,
-                    true_age=baseline_true_age,
+                    true_age=[baseline_true_age],
                 )
                 counterfactual_bioages.append(float(cf_result["biological_age"]))
             except Exception as e:
@@ -229,7 +251,7 @@ class HealthTwinSimulator:
             )
             try:
                 result = self._bioage_model.predict_biological_age(
-                    single_cf, true_age=baseline_true_age
+                    single_cf, true_age=[baseline_true_age]
                 )
                 new_bioage = float(result["biological_age"])
             except Exception:
